@@ -171,12 +171,12 @@ void worker_thread(void *arg) {
     struct timeval current_time;
     gettimeofday(&current_time, NULL); //Get the current time
     //calculate the current time
-    long long elapsed_time = ((current_time.tv_sec - START_TIME.tv_sec) * 1000LL) + ((current_time.tv_usec - START_TIME.tv_usec) / 1000LL);
+    long long start_time = ((current_time.tv_sec - START_TIME.tv_sec) * 1000LL) + ((current_time.tv_usec - START_TIME.tv_usec) / 1000LL);
     
     // THE LOG FILE SECTION - SECTION 2
     // TO ASK BAHARY HOW TO GET THE NUMBER (i) OF THE THREAD INTO THE THREAD //////
     // Write into the logFile TIME: %lld: START job %s
-    // log_start_job(thread_num, elapsed_time, job->command);
+    // log_start_job(thread_num, start_time, job->command);
 
     // split the command string by spaces
     char *token = strtok(job->command, " ");
@@ -278,12 +278,12 @@ void worker_thread(void *arg) {
     //WORKER THREAD FINISH WRITE INTO THE FILE TIME AND JOB END
     gettimeofday(&current_time, NULL); //Get the current time
     //calculate the current time
-    long long elapsed_time = ((current_time.tv_sec - START_TIME.tv_sec) * 1000LL) + ((current_time.tv_usec - START_TIME.tv_usec) / 1000LL);
+    long long finish_time = ((current_time.tv_sec - START_TIME.tv_sec) * 1000LL) + ((current_time.tv_usec - START_TIME.tv_usec) / 1000LL);
     
     // THE LOG FILE SECTION - SECTION 3
     // TO ASK BAHARY HOW TO GET THE NUMBER (i) OF THE THREAD INTO THE THREAD //////
     // Write into the logFile TIME: %lld: END job %s ---- log_end_job is the function
-    // log_end_job(thread_num, elapsed_time, job->command);
+    // log_end_job(thread_num, finish_time, job->command);
 
     // split the command string by spaces
 }
