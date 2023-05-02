@@ -41,7 +41,7 @@ struct job *pop_job(struct work_queue *queue);
 int create_counter_files(int num_counters);
 void worker_thread(void *arg);
 void create_worker_threads(pthread_t* thread_ids, int num_threads);
-void dispatcher(char* cmdfile, int num_threads, struct work_queue *work_queue);
+void dispatcher(const char* cmdfile, int num_threads, struct work_queue *work_queue);
 void cleanup(struct work_queue *queue, pthread_t *threads, int num_threads);
 void create_log_file(int thread_num);
 void log_start_job(int thread_num, long long start_time, char* job_line);
@@ -298,7 +298,7 @@ void create_worker_threads(pthread_t* thread_ids, int num_threads) {
     }
 }
 //Function to dispatcher 
-void dispatcher(char* cmdfile, int num_threads, struct work_queue *work_queue) {
+void dispatcher(const char* cmdfile, int num_threads, struct work_queue *work_queue) {
     // Open the log file //
     FILE* log_file = fopen("dispatcher.txt", "w");
     if (log_file == NULL) {
