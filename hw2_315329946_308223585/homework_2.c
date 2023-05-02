@@ -21,6 +21,18 @@ struct timeval get_start_time() {
     return current_time;
 }
 
+/* Define the job struct */
+struct job {
+    char command[1024];
+    struct job *next;
+};
+
+/* Define the work queue struct - this is a linked list*/
+struct work_queue {
+    struct job *head;
+    struct job *tail;
+};
+
 
 //functions decleration:
 int is_empty(struct work_queue *queue);
@@ -35,20 +47,6 @@ void create_log_file(int thread_num);
 void log_start_job(int thread_num, long long start_time, char* job_line);
 void log_end_job(int thread_num, long long end_time, char* job_line);
 void log_dispatcher(long long time, char* cmd_line);
-
-
-/* Define the job struct */
-struct job {
-    char command[1024];
-    struct job *next;
-};
-
-/* Define the work queue struct - this is a linked list*/
-struct work_queue {
-    struct job *head;
-    struct job *tail;
-};
-
 
 int main(int argc, char* argv[]) {
     start_time = START_TIME;
