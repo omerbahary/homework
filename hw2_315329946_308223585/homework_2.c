@@ -82,7 +82,9 @@ int main(int argc, char* argv[]) {
         #undef LOG_ENABLED
         #define LOG_ENABLED 1
     }
-    struct work_queue* work_queue = { NULL, NULL }; //Declare the work_queue linked list
+    struct work_queue* work_queue = malloc(sizeof(struct work_queue));
+    work_queue->head = NULL;
+    work_queue->tail = NULL;
 
     // Create counter files 
     create_counter_files(num_counters);
