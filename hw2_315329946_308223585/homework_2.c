@@ -56,17 +56,12 @@ int main(int argc, char* argv[]) {
         printf("The number of arguments is incorrect! Usage: %s hw2 cmdfile.txt num_threads num_counters log_enabled\n", argv[0]);
         return 1;
     }
-    //Checks if the command line starts with "hw2"
-    if (strcmp(argv[1], "hw2") != 0) {
-        printf("ERROR: Invalid command '%s'. Expected 'hw2'\n", argv[1]);
-        return 1; 
-    }
 
     // Parse command-line arguments
-    const char* cmdfile = argv[2];
-    int num_threads = atoi(argv[3]);
-    int num_counters = atoi(argv[4]);
-    int log_enabled = atoi(argv[5]);
+    const char* cmdfile = argv[1];
+    int num_threads = atoi(argv[2]);
+    int num_counters = atoi(argv[3]);
+    int log_enabled = atoi(argv[4]);
 
     // Validate arguments
     if (num_threads <= 0 || num_threads > MAX_THREADS) {
