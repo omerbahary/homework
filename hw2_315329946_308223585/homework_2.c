@@ -40,7 +40,7 @@ void add_job(struct work_queue *queue, char *command);
 struct job *pop_job(struct work_queue *queue);
 int create_counter_files(int num_counters);
 void* worker_thread(void *arg);
-void create_worker_threads(pthread_t* thread_ids, int num_threads);
+void create_worker_threads(pthread_t* thread_ids, int num_threads, struct work_queue *work_queue);
 void dispatcher(const char* cmdfile, int num_threads, struct work_queue *work_queue);
 void cleanup(struct work_queue *queue, pthread_t *threads, int num_threads);
 void create_log_file(int thread_num);
@@ -89,7 +89,7 @@ int main(int argc, char* argv[]) {
     // Create an array of pthread_t to hold the thread IDs
     pthread_t thread_ids[num_threads];
     // Create the worker threads
-    create_worker_threads(thread_ids, num_threads);
+    create_worker_threads(thread_ids, num_threads, work_queue);
 
     // Wait for worker threads to finish
     for (int j=0; j<num_threads;j++){
@@ -112,6 +112,7 @@ void add_job(struct work_queue *queue, char *command) {
   // Create a new job.
   struct job *job = malloc(sizeof(struct job));
   strncpy(job->command, command, 1023);
+  printf("job after added command is %s\n", job->command);
   job->next = NULL;
 
   // If the queue is empty, make the new job the head of the queue.
@@ -158,9 +159,11 @@ int create_counter_files(int num_counters) {
         fclose(fp);
         }
     return 1;
-}void* worker_thread(void *arg) {
-    struct job *job = (struct job *)arg;
 
+}void* worker_thread(void *arg) {
+
+    struct work_queue *work_queue = (struct work_queue *)arg;
+    struct job *job = work_queue->head;
     struct timeval current_time;
     gettimeofday(&current_time, NULL); //Get the current time
     //calculate the current time
@@ -172,7 +175,15 @@ int create_counter_files(int num_counters) {
     // log_start_job(thread_num, start_time, job->command);
 
     // split the command string by spaces
-    char *token = strtok(job->command, " ");
+    char *token = strtok(job->command," ");
+    char *t_arg = strtok(NULL," ");
+    printf("%s\n", token);
+    printf("%s\n", t_arg);
+    printf("%s\n", token);
+    printf("%s\n", t_arg);
+    printf("%s\n", token);
+    printf("%s\n", t_arg);
+    printf("%s\n", token);
 
     while (token != NULL) {
         // check the command type
@@ -282,10 +293,10 @@ int create_counter_files(int num_counters) {
     return 0;
 }
 // Function to create worker threads
-void create_worker_threads(pthread_t* thread_ids, int num_threads) {
+void create_worker_threads(pthread_t* thread_ids, int num_threads, struct work_queue *work_queue) {
     for (int i = 0; i < num_threads; i++) {
         create_log_file(i);
-        if (pthread_create(&thread_ids[i], NULL, worker_thread, NULL) != 0) {
+        if (pthread_create(&thread_ids[i], NULL, worker_thread, (void*)work_queue) != 0) {
             printf("Error creating thread %d\n", i);
             exit(EXIT_FAILURE);
         }
@@ -345,12 +356,15 @@ void dispatcher(const char* cmdfile, int num_threads, struct work_queue *work_qu
                 printf("Unknown dispatcher command: %s\n", line);
             }
         }
-// Otherwise, the line is a job for a worker thread
+        // Otherwise, the line is a job for a worker thread
        else if (strncmp(line, "worker ", 7) == 0) {
         // Parse the job commands and arguments
         struct job j;
         // Add the command to the job and add it to work_queue
-            add_job(work_queue, line +6);
+            char* worker_cmd = strtok(line, " ");
+            worker_cmd = strtok(NULL, "");
+            printf("worker cmd to add is %s", worker_cmd);
+            add_job(work_queue, worker_cmd);
             // the +6 is to copy without the word worker
 
        }
