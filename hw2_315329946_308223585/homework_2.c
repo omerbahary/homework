@@ -39,7 +39,7 @@ int is_empty(struct work_queue *queue);
 void add_job(struct work_queue *queue, char *command);
 struct job *pop_job(struct work_queue *queue);
 int create_counter_files(int num_counters);
-void worker_thread(void *arg);
+void* worker_thread(void *arg);
 void create_worker_threads(pthread_t* thread_ids, int num_threads);
 void dispatcher(const char* cmdfile, int num_threads, struct work_queue *work_queue);
 void cleanup(struct work_queue *queue, pthread_t *threads, int num_threads);
@@ -95,7 +95,6 @@ int main(int argc, char* argv[]) {
     for (int j=0; j<num_threads;j++){
         pthread_join(thread_ids[j],NULL);
     }
-    // TO ASK BAHARY HOW DO WE WAIT TO THE THREAD TO BE FINISHED?
 
     // Free resources
     cleanup(work_queue, thread_ids, num_threads);
@@ -159,8 +158,7 @@ int create_counter_files(int num_counters) {
         fclose(fp);
         }
     return 1;
-}
-void worker_thread(void *arg) {
+}void* worker_thread(void *arg) {
     struct job *job = (struct job *)arg;
 
     struct timeval current_time;
@@ -281,6 +279,7 @@ void worker_thread(void *arg) {
     // log_end_job(thread_num, finish_time, job->command);
 
     // split the command string by spaces
+    return 0;
 }
 // Function to create worker threads
 void create_worker_threads(pthread_t* thread_ids, int num_threads) {
