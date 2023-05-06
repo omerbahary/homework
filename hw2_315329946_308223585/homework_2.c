@@ -189,6 +189,8 @@ int create_counter_files(int num_counters) {
         // log_start_job(thread_num, start_time, job->command);
 
         // split the command string by spaces
+        char raw_command[1024];
+        strcpy(raw_command, job->command);
         char *full_command = job->command;
         char *cmd_token = strtok(full_command, " ");
         char *cmd = cmd_token;
@@ -240,15 +242,19 @@ int create_counter_files(int num_counters) {
         else if (strcmp(cmd, "repeat") == 0) {
         // repeat the sequence of commands x times
         int repeat_count = atoi(cmd_arg);
-        char *repeat_command = strchr(job->command, ':') + 1;  // find the start of the command to repeat
-        int repeat_length = strlen(repeat_command);
-        char *repeat_token = strtok(repeat_command, ";");  // split the repeat command by semicolon
+        char *repeat_command = strchr(raw_command, ';') + 1;  // find the start of the command to repeat
+        printf("%s repeat command!!!!\n", repeat_command);
+        char *repeat_token;
         for (int i = 0; i < repeat_count; i++) {
+            char *repeat_token = strtok(repeat_command, ";");
+            printf("%s first repeat token!!!!\n", repeat_token);
             while (repeat_token != NULL) {
                 // execute the repeated command
+                char *repeat_command_arg = strtok(NULL, " ");
+                printf("%s repeat token !!!!\n", repeat_token);
+                printf("%s repeat arg !!!!\n", repeat_command_arg);
                 if (strstr(repeat_token, "increment") != NULL) {
-                    cmd_token = strtok(NULL, " ");
-                    int x = atoi(cmd_token);
+                    int x = atoi(repeat_command_arg);
                     char filename[MAX_COUNTER_NAME_LENGTH];
                     sprintf(filename, "count%02d.txt", x);
                     int counter_value;
@@ -261,8 +267,7 @@ int create_counter_files(int num_counters) {
                 }
                 else if (strstr(repeat_token, "decrement") != NULL) {
                     // decrement the counter in the counter file
-                    cmd_token = strtok(NULL, " ");
-                    int x = atoi(cmd_token);
+                    int x = atoi(repeat_command_arg);
                     char filename[MAX_COUNTER_NAME_LENGTH];
                     sprintf(filename, "count%02d.txt", x);
                     int counter_value;
@@ -275,24 +280,19 @@ int create_counter_files(int num_counters) {
                 }
                 else if (strstr(repeat_token, "msleep") != NULL) {
                     // sleep for the specified number of milliseconds
-                    cmd_token = strtok(NULL, " ");
-                    int msleep_time = atoi(cmd_token);
+                    int msleep_time = atoi(repeat_command_arg);
                     usleep(msleep_time * 1000);
                 }
                     else {
                     fprintf(stderr, "Invalid command: %s\n", repeat_token);
                 }
-                repeat_token = strtok(NULL, ";");
             }
-            // reset the repeat_token for the next iteration
-            repeat_token = strtok(repeat_command, ";");
-            }
-        cmd_token = NULL;  // break out of the while loop since the repeat command has been handled
         }
-                else {
-                fprintf(stderr, "Invalid command: %s\n", cmd_token);
-                cmd_token = strtok(NULL, " ");
-            }
+        repeat_token = strtok(NULL, ";");
+    }
+    else {
+            fprintf(stderr, "Invalid command: %s\n", raw_command);
+        }
         //WORKER THREAD FINISH WRITE INTO THE FILE TIME AND JOB END
         gettimeofday(&current_time, NULL); //Get the current time
         //calculate the current time
