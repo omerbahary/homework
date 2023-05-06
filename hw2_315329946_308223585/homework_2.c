@@ -228,7 +228,7 @@ int create_counter_files(int num_counters) {
             counter_value++;
             rewind(counter_file);
             fprintf(counter_file, "%d", counter_value);
-            fclose(counter_file);
+            //fclose(counter_file);
         }
         else if (strcmp(cmd_token, "decrement") == 0) {
             // decrement the counter in the counter file
@@ -403,17 +403,7 @@ void cleanup(struct work_queue *queue, pthread_t *threads, int num_threads) {
     // Free the work queue itself.
     free(queue);
 
-    // Close any open file pointers.
-    for (int i = 0; i < MAX_COUNTERS; i++) {
-        char filename[MAX_COUNTER_NAME_LENGTH];
-        sprintf(filename, "count%02d.txt", i);
-        fclose(fopen(filename, "r+"));
-    }
-
     // Destroy any created threads.
-    for (int i = 0; i < num_threads; i++) {
-        pthread_cancel(threads[i]);
-    }
 }
 //function to create log files
 void create_log_file(int thread_num) {
