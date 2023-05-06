@@ -1,2 +1,2 @@
-dispatcher_msleep 5
 worker msleep 1
+worker increment 1

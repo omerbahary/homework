@@ -5,8 +5,6 @@
 #include <unistd.h> //to use usleep
 #include <time.h>
 #include <sys/time.h>
-
-
 #define MAX_THREADS 4096
 #define MAX_COUNTERS 100
 #define MAX_COUNTER_NAME_LENGTH 15
@@ -31,6 +29,7 @@ struct job {
 struct work_queue {
     struct job *head;
     struct job *tail;
+    pthread_mutex_t mutex;
 };
 
 
@@ -47,6 +46,7 @@ void create_log_file(int thread_num);
 void log_start_job(int thread_num, long long start_time, char* job_line);
 void log_end_job(int thread_num, long long end_time, char* job_line);
 void log_dispatcher(long long time, char* cmd_line);
+void remove_job(struct work_queue *queue);
 
 int main(int argc, char* argv[]) {
     start_time = START_TIME;
@@ -163,40 +163,63 @@ int create_counter_files(int num_counters) {
 }void* worker_thread(void *arg) {
 
     struct work_queue *work_queue = (struct work_queue *)arg;
-    struct job *job = work_queue->head;
-    struct timeval current_time;
-    gettimeofday(&current_time, NULL); //Get the current time
-    //calculate the current time
-    long long start_time = ((current_time.tv_sec - START_TIME.tv_sec) * 1000LL) + ((current_time.tv_usec - START_TIME.tv_usec) / 1000LL);
-    
-    // THE LOG FILE SECTION - SECTION 2
-    // TO ASK BAHARY HOW TO GET THE NUMBER (i) OF THE THREAD INTO THE THREAD //////
-    // Write into the logFile TIME: %lld: START job %s
-    // log_start_job(thread_num, start_time, job->command);
-
-    // split the command string by spaces
-    char *token = strtok(job->command," ");
-    char *t_arg = strtok(NULL," ");
-    printf("%s\n", token);
-    printf("%s\n", t_arg);
-    printf("%s\n", token);
-    printf("%s\n", t_arg);
-    printf("%s\n", token);
-    printf("%s\n", t_arg);
-    printf("%s\n", token);
-
-    while (token != NULL) {
-        // check the command type
-        if (strcmp(token, "msleep") == 0) {
-            // sleep for the specified number of milliseconds
-            token = strtok(NULL, " ");
-            int msleep_time = atoi(token);
-            usleep(msleep_time * 1000);
+    while (1) {
+        struct job *job = NULL;
+        pthread_mutex_lock(&work_queue->mutex);
+        if (work_queue->head != NULL) {
+            job = work_queue->head;
+            work_queue->head = work_queue->head->next;
+            if (work_queue->head == NULL) {
+                work_queue->tail = NULL;
+            }
         }
-        else if (strcmp(token, "increment") == 0) {
+        pthread_mutex_unlock(&work_queue->mutex);
+        if (job == NULL) {
+            // Queue is empty, exit thread
+            pthread_exit(NULL);
+        }
+        struct timeval current_time;
+        gettimeofday(&current_time, NULL); //Get the current time
+        //calculate the current time
+        long long start_time = ((current_time.tv_sec - START_TIME.tv_sec) * 1000LL) + ((current_time.tv_usec - START_TIME.tv_usec) / 1000LL);
+
+        // THE LOG FILE SECTION - SECTION 2
+        // TO ASK BAHARY HOW TO GET THE NUMBER (i) OF THE THREAD INTO THE THREAD //////
+        // Write into the logFile TIME: %lld: START job %s
+        // log_start_job(thread_num, start_time, job->command);
+
+        // split the command string by spaces
+        char *full_command = job->command;
+        char *cmd_token = strtok(full_command, " ");
+        char *cmd = cmd_token;
+        char *cmd_arg = strtok(NULL, " ");
+        printf("command token is %s\n", cmd);
+        printf("cmd arg is %s\n", cmd_arg);
+
+        // check the command type
+        if (strcmp(cmd, "msleep") == 0) {
+            //cmd_token = strtok(NULL, " ");
+            printf("cmd arg is %s", cmd_arg);
+            if (cmd == NULL)
+            {
+                printf("end of commands\n");
+                pthread_exit(NULL);
+            }
+            // sleep for the specified number of milliseconds
+            int msleep_time = atoi(cmd_arg);
+            printf("Sleeping\n");
+            usleep(msleep_time * 100000);
+        }
+        else if (strcmp(cmd, "increment") == 0) {
+            //cmd_token = strtok(NULL, " ");
+            if (cmd == NULL)
+            {
+                printf("end of commands");
+                pthread_exit(NULL);
+            }
             // increment the counter in the counter file
-            token = strtok(NULL, " ");
-            int x = atoi(token);
+            printf("Incrementing\n");
+            int x = atoi(cmd_arg);
             char filename[MAX_COUNTER_NAME_LENGTH];
             sprintf(filename, "count%02d.txt", x);
             int counter_value;
@@ -207,10 +230,10 @@ int create_counter_files(int num_counters) {
             fprintf(counter_file, "%d", counter_value);
             fclose(counter_file);
         }
-        else if (strcmp(token, "decrement") == 0) {
+        else if (strcmp(cmd_token, "decrement") == 0) {
             // decrement the counter in the counter file
-            token = strtok(NULL, " ");
-            int x = atoi(token);
+            cmd_token = strtok(NULL, " ");
+            int x = atoi(cmd_token);
             char filename[MAX_COUNTER_NAME_LENGTH];
             sprintf(filename, "count%02d.txt", x);
             int counter_value;
@@ -221,10 +244,10 @@ int create_counter_files(int num_counters) {
             fprintf(counter_file, "%d", counter_value);
             fclose(counter_file);
         } 
-        else if (strcmp(token, "repeat") == 0) {
+        else if (strcmp(cmd_token, "repeat") == 0) {
         // repeat the sequence of commands x times
-        token = strtok(NULL, " ");
-        int repeat_count = atoi(token);
+        cmd_token = strtok(NULL, " ");
+        int repeat_count = atoi(cmd_token);
         char *repeat_command = strchr(job->command, ':') + 1;  // find the start of the command to repeat
         int repeat_length = strlen(repeat_command);
         char *repeat_token = strtok(repeat_command, ";");  // split the repeat command by semicolon
@@ -232,8 +255,8 @@ int create_counter_files(int num_counters) {
             while (repeat_token != NULL) {
                 // execute the repeated command
                 if (strstr(repeat_token, "increment") != NULL) {
-                    token = strtok(NULL, " ");
-                    int x = atoi(token);
+                    cmd_token = strtok(NULL, " ");
+                    int x = atoi(cmd_token);
                     char filename[MAX_COUNTER_NAME_LENGTH];
                     sprintf(filename, "count%02d.txt", x);
                     int counter_value;
@@ -246,8 +269,8 @@ int create_counter_files(int num_counters) {
                 }
                 else if (strstr(repeat_token, "decrement") != NULL) {
                     // decrement the counter in the counter file
-                    token = strtok(NULL, " ");
-                    int x = atoi(token);
+                    cmd_token = strtok(NULL, " ");
+                    int x = atoi(cmd_token);
                     char filename[MAX_COUNTER_NAME_LENGTH];
                     sprintf(filename, "count%02d.txt", x);
                     int counter_value;
@@ -260,37 +283,36 @@ int create_counter_files(int num_counters) {
                 }
                 else if (strstr(repeat_token, "msleep") != NULL) {
                     // sleep for the specified number of milliseconds
-                    token = strtok(NULL, " ");
-                    int msleep_time = atoi(token);
+                    cmd_token = strtok(NULL, " ");
+                    int msleep_time = atoi(cmd_token);
                     usleep(msleep_time * 1000);
                 }
-                 else {
+                    else {
                     fprintf(stderr, "Invalid command: %s\n", repeat_token);
                 }
                 repeat_token = strtok(NULL, ";");
             }
-        // reset the repeat_token for the next iteration
-        repeat_token = strtok(repeat_command, ";");
+            // reset the repeat_token for the next iteration
+            repeat_token = strtok(repeat_command, ";");
+            }
+        cmd_token = NULL;  // break out of the while loop since the repeat command has been handled
         }
-    token = NULL;  // break out of the while loop since the repeat command has been handled
-    }
-         else {
-            fprintf(stderr, "Invalid command: %s\n", token);
-            token = strtok(NULL, " ");
-        }
-    }
-    //WORKER THREAD FINISH WRITE INTO THE FILE TIME AND JOB END
-    gettimeofday(&current_time, NULL); //Get the current time
-    //calculate the current time
-    long long finish_time = ((current_time.tv_sec - START_TIME.tv_sec) * 1000LL) + ((current_time.tv_usec - START_TIME.tv_usec) / 1000LL);
-    
-    // THE LOG FILE SECTION - SECTION 3
-    // TO ASK BAHARY HOW TO GET THE NUMBER (i) OF THE THREAD INTO THE THREAD //////
-    // Write into the logFile TIME: %lld: END job %s ---- log_end_job is the function
-    // log_end_job(thread_num, finish_time, job->command);
+                else {
+                fprintf(stderr, "Invalid command: %s\n", cmd_token);
+                cmd_token = strtok(NULL, " ");
+            }
+        //WORKER THREAD FINISH WRITE INTO THE FILE TIME AND JOB END
+        gettimeofday(&current_time, NULL); //Get the current time
+        //calculate the current time
+        long long finish_time = ((current_time.tv_sec - START_TIME.tv_sec) * 1000LL) + ((current_time.tv_usec - START_TIME.tv_usec) / 1000LL);
 
-    // split the command string by spaces
-    return 0;
+        // THE LOG FILE SECTION - SECTION 3
+        // TO ASK BAHARY HOW TO GET THE NUMBER (i) OF THE THREAD INTO THE THREAD //////
+        // Write into the logFile TIME: %lld: END job %s ---- log_end_job is the function
+        // log_end_job(thread_num, finish_time, job->command);
+
+        return 0;
+        }
 }
 // Function to create worker threads
 void create_worker_threads(pthread_t* thread_ids, int num_threads, struct work_queue *work_queue) {
@@ -362,8 +384,8 @@ void dispatcher(const char* cmdfile, int num_threads, struct work_queue *work_qu
         struct job j;
         // Add the command to the job and add it to work_queue
             char* worker_cmd = strtok(line, " ");
-            worker_cmd = strtok(NULL, "");
-            printf("worker cmd to add is %s", worker_cmd);
+            worker_cmd = strtok(NULL, "\n");
+            printf("worker cmd to add is %s\n", worker_cmd);
             add_job(work_queue, worker_cmd);
             // the +6 is to copy without the word worker
 
@@ -453,4 +475,11 @@ void log_dispatcher(long long time, char* cmd_line) {
     }
     fprintf(log_file, "TIME %lld: read cmd line: %s\n", time, cmd_line);
     fclose(log_file);
+}
+void remove_job(struct work_queue *queue) {
+  if (queue->head != NULL) {
+    struct job *old_head = queue->head;
+    queue->head = old_head->next;
+    free(old_head);
+  }
 }
