@@ -195,28 +195,22 @@ int create_counter_files(int num_counters) {
         char *cmd_arg = strtok(NULL, " ");
         printf("command token is %s\n", cmd);
         printf("cmd arg is %s\n", cmd_arg);
+        if (cmd == NULL)
+        {
+            printf("end of commands\n");
+            pthread_exit(NULL);
+        }
 
         // check the command type
         if (strcmp(cmd, "msleep") == 0) {
-            //cmd_token = strtok(NULL, " ");
             printf("cmd arg is %s", cmd_arg);
-            if (cmd == NULL)
-            {
-                printf("end of commands\n");
-                pthread_exit(NULL);
-            }
             // sleep for the specified number of milliseconds
             int msleep_time = atoi(cmd_arg);
             printf("Sleeping\n");
             usleep(msleep_time * 100000);
         }
+
         else if (strcmp(cmd, "increment") == 0) {
-            //cmd_token = strtok(NULL, " ");
-            if (cmd == NULL)
-            {
-                printf("end of commands");
-                pthread_exit(NULL);
-            }
             // increment the counter in the counter file
             printf("Incrementing\n");
             int x = atoi(cmd_arg);
@@ -228,12 +222,11 @@ int create_counter_files(int num_counters) {
             counter_value++;
             rewind(counter_file);
             fprintf(counter_file, "%d", counter_value);
-            //fclose(counter_file);
+            fclose(counter_file);
         }
-        else if (strcmp(cmd_token, "decrement") == 0) {
+        else if (strcmp(cmd, "decrement") == 0) {
             // decrement the counter in the counter file
-            cmd_token = strtok(NULL, " ");
-            int x = atoi(cmd_token);
+            int x = atoi(cmd_arg);
             char filename[MAX_COUNTER_NAME_LENGTH];
             sprintf(filename, "count%02d.txt", x);
             int counter_value;
@@ -244,10 +237,9 @@ int create_counter_files(int num_counters) {
             fprintf(counter_file, "%d", counter_value);
             fclose(counter_file);
         } 
-        else if (strcmp(cmd_token, "repeat") == 0) {
+        else if (strcmp(cmd, "repeat") == 0) {
         // repeat the sequence of commands x times
-        cmd_token = strtok(NULL, " ");
-        int repeat_count = atoi(cmd_token);
+        int repeat_count = atoi(cmd_arg);
         char *repeat_command = strchr(job->command, ':') + 1;  // find the start of the command to repeat
         int repeat_length = strlen(repeat_command);
         char *repeat_token = strtok(repeat_command, ";");  // split the repeat command by semicolon
@@ -399,11 +391,8 @@ void cleanup(struct work_queue *queue, pthread_t *threads, int num_threads) {
         struct job *job = pop_job(queue);
         free(job);
     }
-
     // Free the work queue itself.
     free(queue);
-
-    // Destroy any created threads.
 }
 //function to create log files
 void create_log_file(int thread_num) {
