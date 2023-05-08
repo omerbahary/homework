@@ -1,2 +1,23 @@
 worker msleep 1
-worker increment 1
+worker repeat 4; increment 5; increment 4; increment 3
+
+run cmdfile.txt 10 10 10
+
+
+cmd arg is 1
+Sleepingis 1
+[New Thread 0x7ffff73fe640 (LWP 4172)]
+command token is repeat
+cmd arg is 4;
+ increment 5 repeat command!!!!
+ increment 5 repeat token !!!!
+increment repeat arg !!!!
+[New Thread 0x7ffff6bfd640 (LWP 4173)]
+4 repeat token !!!!
+increment repeat arg !!!!
+Invalid command: 4
+ increment 3 repeat token !!!!
+increment repeat arg !!!!
+ increment 5 repeat command!!!!
+ increment 5 repeat token !!!!
+(null) repeat arg !!!!

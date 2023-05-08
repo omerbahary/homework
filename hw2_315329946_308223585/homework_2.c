@@ -240,72 +240,69 @@ int create_counter_files(int num_counters) {
             fclose(counter_file);
         } 
         else if (strcmp(cmd, "repeat") == 0) {
-        // repeat the sequence of commands x times
-        int repeat_count = atoi(cmd_arg);
-        char *repeat_command = strchr(raw_command, ';') + 1;  // find the start of the command to repeat
-        printf("%s repeat command!!!!\n", repeat_command);
-        char *repeat_token;
-        for (int i = 0; i < repeat_count; i++) {
-            char *repeat_token = strtok(repeat_command, ";");
-            printf("%s first repeat token!!!!\n", repeat_token);
-            while (repeat_token != NULL) {
-                // execute the repeated command
-                char *repeat_command_arg = strtok(NULL, " ");
-                printf("%s repeat token !!!!\n", repeat_token);
-                printf("%s repeat arg !!!!\n", repeat_command_arg);
-                if (strstr(repeat_token, "increment") != NULL) {
-                    int x = atoi(repeat_command_arg);
-                    char filename[MAX_COUNTER_NAME_LENGTH];
-                    sprintf(filename, "count%02d.txt", x);
-                    int counter_value;
-                    FILE *counter_file = fopen(filename, "r+");
-                    fscanf(counter_file, "%d", &counter_value);
-                    counter_value++;
-                    rewind(counter_file);
-                    fprintf(counter_file, "%d", counter_value);
-                    fclose(counter_file);
+            // repeat the sequence of commands x times
+            char* repeat_count_char = strtok(cmd_arg, ";");
+            int repeat_count = atoi(repeat_count_char);
+            char* repeat_token = strtok(raw_command, ";");
+            repeat_token = strtok(NULL, ";");
+            printf("reapeat token is %s\n", repeat_token);
+
+            for (int i = 0; i < repeat_count; i++) {
+                char current_token[20];
+                char input[20];
+                strcpy(input, repeat_token); // store the current token before advancing
+                int repeat_command_arg;
+                sscanf(input, "%s %d", current_token, &repeat_command_arg);
+
+                printf("repeat command is %s\n", current_token);
+                printf("repeat command argument is %d\n", repeat_command_arg);
+
+                if (repeat_token != NULL) {
+                    // execute the repeated command
+                    if (strstr(current_token, "increment") != NULL) {
+                        // increment the counter in the counter file
+                        char filename[MAX_COUNTER_NAME_LENGTH];
+                        sprintf(filename, "count%02d.txt", repeat_command_arg);
+
+                        int counter_value;
+                        FILE *counter_file = fopen(filename, "r+");
+                        fscanf(counter_file, "%d", &counter_value);
+                        counter_value++;
+                        rewind(counter_file);
+                        fprintf(counter_file, "%d", counter_value);
+                        fclose(counter_file);
+                    } else if (strstr(current_token, "decrement") != NULL) {
+                        // decrement the counter in the counter file
+                        char filename[MAX_COUNTER_NAME_LENGTH];
+                        sprintf(filename, "count%02d.txt", repeat_command_arg);
+
+                        int counter_value;
+                        FILE *counter_file = fopen(filename, "r+");
+                        fscanf(counter_file, "%d", &counter_value);
+                        counter_value--;
+                        rewind(counter_file);
+                        fprintf(counter_file, "%d", counter_value);
+                        fclose(counter_file);
+                    } else if (strstr(current_token, "msleep") != NULL) {
+                        // sleep for the specified number of milliseconds
+                        usleep(repeat_command_arg * 1000);
+                    } else {
+                        fprintf(stderr, "Invalid command: %s\n", current_token);
+                        // Handle the error appropriately, e.g., return an error code or exit the program
+                    }
+                    repeat_token = strtok(NULL, ";");
+                    repeat_token++;
                 }
-                else if (strstr(repeat_token, "decrement") != NULL) {
-                    // decrement the counter in the counter file
-                    int x = atoi(repeat_command_arg);
-                    char filename[MAX_COUNTER_NAME_LENGTH];
-                    sprintf(filename, "count%02d.txt", x);
-                    int counter_value;
-                    FILE *counter_file = fopen(filename, "r+");
-                    fscanf(counter_file, "%d", &counter_value);
-                    counter_value--;
-                    rewind(counter_file);
-                    fprintf(counter_file, "%d", counter_value);
-                    fclose(counter_file); 
-                }
-                else if (strstr(repeat_token, "msleep") != NULL) {
-                    // sleep for the specified number of milliseconds
-                    int msleep_time = atoi(repeat_command_arg);
-                    usleep(msleep_time * 1000);
-                }
-                    else {
-                    fprintf(stderr, "Invalid command: %s\n", repeat_token);
+                if (repeat_token == NULL)
+                {
+                    printf("MOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO\n");
+                    pthread_exit(NULL);
                 }
             }
         }
-        repeat_token = strtok(NULL, ";");
     }
-    else {
-            fprintf(stderr, "Invalid command: %s\n", raw_command);
-        }
-        //WORKER THREAD FINISH WRITE INTO THE FILE TIME AND JOB END
-        gettimeofday(&current_time, NULL); //Get the current time
-        //calculate the current time
-        long long finish_time = ((current_time.tv_sec - START_TIME.tv_sec) * 1000LL) + ((current_time.tv_usec - START_TIME.tv_usec) / 1000LL);
-
-        // THE LOG FILE SECTION - SECTION 3
-        // TO ASK BAHARY HOW TO GET THE NUMBER (i) OF THE THREAD INTO THE THREAD //////
-        // Write into the logFile TIME: %lld: END job %s ---- log_end_job is the function
-        // log_end_job(thread_num, finish_time, job->command);
-
-        return 0;
-        }
 }
+
 // Function to create worker threads
 void create_worker_threads(pthread_t* thread_ids, int num_threads, struct work_queue *work_queue) {
     for (int i = 0; i < num_threads; i++) {
