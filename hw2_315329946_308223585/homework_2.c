@@ -117,7 +117,6 @@ void add_job(struct work_queue *queue, char *command) {
   // Create a new job.
   struct job *job = malloc(sizeof(struct job));
   strncpy(job->command, command, 1023);
-  printf("job after added command is %s\n", job->command);
   job->next = NULL;
 
   // If the queue is empty, make the new job the head of the queue.
@@ -189,8 +188,9 @@ int create_counter_files(int num_counters) {
         struct timeval current_time;
         gettimeofday(&current_time, NULL); //Get the current time
         //calculate the current time
-        long long start_time = ((current_time.tv_sec - START_TIME.tv_sec) * 1000LL) + ((current_time.tv_usec - START_TIME.tv_usec) / 1000LL);
+        long long start_time = (current_time.tv_sec * 1000LL) + (current_time.tv_usec / 1000LL) - (START_TIME.tv_sec * 1000LL) - (START_TIME.tv_usec / 1000LL);
         log_start_job(thread_num, start_time, job->command);
+
 
         // split the command string by spaces
         char raw_command[1024];
@@ -199,8 +199,6 @@ int create_counter_files(int num_counters) {
         char *cmd_token = strtok(full_command, " ");
         char *cmd = cmd_token;
         char *cmd_arg = strtok(NULL, " ");
-        printf("command token is %s\n", cmd);
-        printf("cmd arg is %s\n", cmd_arg);
         if (cmd == NULL)
         {
             printf("end of commands\n");
@@ -209,7 +207,6 @@ int create_counter_files(int num_counters) {
 
         // check the command type
         if (strcmp(cmd, "msleep") == 0) {
-            printf("cmd arg is %s", cmd_arg);
             // sleep for the specified number of milliseconds
             int msleep_time = atoi(cmd_arg);
             printf("Sleeping\n");
@@ -247,7 +244,6 @@ int create_counter_files(int num_counters) {
             // repeat the sequence of commands x times
             char* repeat_count_char = strtok(cmd_arg, ";");
             int repeat_count = atoi(repeat_count_char);
-            //printf("reapeat token is %s\n", repeat_token);
             char current_token[20];
             char* repeat_token = strtok(raw_command, ";");
             repeat_token = strtok(NULL, ";");
@@ -266,8 +262,8 @@ int create_counter_files(int num_counters) {
                 int repeat_command_arg;
                 sscanf(input, "%s %d", current_token, &repeat_command_arg);
 
-                printf("repeat command is %s\n", current_token);
-                printf("repeat command argument is %d\n", repeat_command_arg);
+                //printf("repeat command is %s\n", current_token);
+               // printf("repeat command argument is %d\n", repeat_command_arg);
 
                 if (repeat_token != NULL) {
                     // execute the repeated command
@@ -302,7 +298,6 @@ int create_counter_files(int num_counters) {
                         fprintf(stderr, "Invalid command: %s\n", current_token);
                         // Handle the error appropriately, e.g., return an error code or exit the program
                     }
-                    printf("REAPEAT TOKEN IS: %s\n", repeat_token);
                 }
                 repeat_token = strtok(NULL, ";");
             }
@@ -358,8 +353,6 @@ void dispatcher(const char* cmdfile, int num_threads, struct work_queue *work_qu
             char cmd[20];
             int arg;
             sscanf(line + 11, "%s %d", cmd, &arg);
-            printf("DISP CMD IS %s\n", cmd);
-            printf("DISP arg IS %d\n", arg);
 
             // Execute the command
             if (strcmp(cmd, "msleep") == 0) {
@@ -386,7 +379,6 @@ void dispatcher(const char* cmdfile, int num_threads, struct work_queue *work_qu
         // Add the command to the job and add it to work_queue
             char* worker_cmd = strtok(line, " ");
             worker_cmd = strtok(NULL, "\n");
-            printf("worker cmd to add is %s\n", worker_cmd);
             add_job(work_queue, worker_cmd);
             // the +6 is to copy without the word worker
 

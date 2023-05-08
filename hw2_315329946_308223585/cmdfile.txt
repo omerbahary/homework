@@ -1,6 +1,7 @@
 dispatcher_msleep 5
-worker repeat 5; increment 5; msleep 1
-
+worker msleep 20
+worker increment 5
+worker increment 3
 run cmdfile.txt 3 10 1
 
 
