@@ -1,6 +1,7 @@
-worker repeat 4; increment 5; increment 4; increment 3
+dispatcher_msleep 5
+worker repeat 5; increment 5; msleep 1
 
-run cmdfile.txt 10 10 10
+run cmdfile.txt 3 10 10
 
 
 cmd arg is 1

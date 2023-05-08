@@ -246,13 +246,16 @@ int create_counter_files(int num_counters) {
             //printf("reapeat token is %s\n", repeat_token);
             char current_token[20];
             char* repeat_token = strtok(raw_command, ";");
+            repeat_token = strtok(NULL, ";");
+            char* initial_repeat_token = repeat_token;
+            int i =0;
 
-            for (int i = 0; i < repeat_count; i++) {
-                repeat_token = strtok(NULL, ";");
+            while (i < repeat_count - 1) {
                 if (repeat_token == NULL)
                 {
                     printf("GOTHA\n");
-                    pthread_exit(NULL);
+                    repeat_token = initial_repeat_token;
+                    i++;
                 }
                 char input[20];
                 strcpy(input, repeat_token); // store the current token before advancing
@@ -295,7 +298,9 @@ int create_counter_files(int num_counters) {
                         fprintf(stderr, "Invalid command: %s\n", current_token);
                         // Handle the error appropriately, e.g., return an error code or exit the program
                     }
+                    printf("REAPEAT TOKEN IS: %s\n", repeat_token);
                 }
+                repeat_token = strtok(NULL, ";");
             }
         }
     }
@@ -333,7 +338,7 @@ void dispatcher(const char* cmdfile, int num_threads, struct work_queue *work_qu
         line[strcspn(line, "\n")] = 0;
 
         // Check if the line is a dispatcher command
-        if (strncmp(line, "dispatcher ", 11) == 0) {
+        if (strncmp(line, "dispatcher", 10) == 0) {
             //Every dispatcher line which had been read - write it into the log file.
 
             struct timeval current_time;
@@ -346,6 +351,8 @@ void dispatcher(const char* cmdfile, int num_threads, struct work_queue *work_qu
             char cmd[20];
             int arg;
             sscanf(line + 11, "%s %d", cmd, &arg);
+            printf("DISP CMD IS %s\n", cmd);
+            printf("DISP arg IS %d\n", arg);
 
             // Execute the command
             if (strcmp(cmd, "msleep") == 0) {
@@ -391,7 +398,7 @@ void cleanup(struct work_queue *queue, pthread_t *threads, int num_threads) {
 }
 //function to create log files
 void create_log_file(int thread_num) {
-    if (!LOG_ENABLED) {
+    if (LOG_ENABLED != 1) {
         return;
     }
 
