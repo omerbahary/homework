@@ -243,12 +243,12 @@ int create_counter_files(int num_counters) {
             // repeat the sequence of commands x times
             char* repeat_count_char = strtok(cmd_arg, ";");
             int repeat_count = atoi(repeat_count_char);
+            //printf("reapeat token is %s\n", repeat_token);
+            char current_token[20];
             char* repeat_token = strtok(raw_command, ";");
-            repeat_token = strtok(NULL, ";");
-            printf("reapeat token is %s\n", repeat_token);
 
             for (int i = 0; i < repeat_count; i++) {
-                char current_token[20];
+                repeat_token = strtok(NULL, ";");
                 char input[20];
                 strcpy(input, repeat_token); // store the current token before advancing
                 int repeat_command_arg;
@@ -290,13 +290,6 @@ int create_counter_files(int num_counters) {
                         fprintf(stderr, "Invalid command: %s\n", current_token);
                         // Handle the error appropriately, e.g., return an error code or exit the program
                     }
-                    repeat_token = strtok(NULL, ";");
-                    repeat_token++;
-                }
-                if (repeat_token == NULL)
-                {
-                    printf("MOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO\n");
-                    pthread_exit(NULL);
                 }
             }
         }

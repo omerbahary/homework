@@ -1,4 +1,3 @@
-worker msleep 1
 worker repeat 4; increment 5; increment 4; increment 3
 
 run cmdfile.txt 10 10 10
