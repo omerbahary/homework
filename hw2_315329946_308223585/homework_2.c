@@ -32,6 +32,11 @@ struct work_queue {
     pthread_mutex_t mutex;
 };
 
+// Structure to hold thread ID and work queue pointer
+struct ThreadData {
+    int thread_id;
+    struct work_queue* work_queue;
+};
 
 //functions decleration:
 int is_empty(struct work_queue *queue);
@@ -161,8 +166,10 @@ int create_counter_files(int num_counters) {
     return 1;
 
 }void* worker_thread(void *arg) {
+    struct ThreadData* data = (struct ThreadData*)arg;
+    struct work_queue* work_queue = data->work_queue;
+    int thread_num = data->thread_id;
 
-    struct work_queue *work_queue = (struct work_queue *)arg;
     while (1) {
         struct job *job = NULL;
         pthread_mutex_lock(&work_queue->mutex);
@@ -178,15 +185,12 @@ int create_counter_files(int num_counters) {
             // Queue is empty, exit thread
             pthread_exit(NULL);
         }
+        printf("THREAD ID IS %d\n", thread_num);
         struct timeval current_time;
         gettimeofday(&current_time, NULL); //Get the current time
         //calculate the current time
         long long start_time = ((current_time.tv_sec - START_TIME.tv_sec) * 1000LL) + ((current_time.tv_usec - START_TIME.tv_usec) / 1000LL);
-
-        // THE LOG FILE SECTION - SECTION 2
-        // TO ASK BAHARY HOW TO GET THE NUMBER (i) OF THE THREAD INTO THE THREAD //////
-        // Write into the logFile TIME: %lld: START job %s
-        // log_start_job(thread_num, start_time, job->command);
+        log_start_job(thread_num, start_time, job->command);
 
         // split the command string by spaces
         char raw_command[1024];
@@ -308,9 +312,12 @@ int create_counter_files(int num_counters) {
 
 // Function to create worker threads
 void create_worker_threads(pthread_t* thread_ids, int num_threads, struct work_queue *work_queue) {
+    struct ThreadData thread_data[num_threads];
     for (int i = 0; i < num_threads; i++) {
         create_log_file(i);
-        if (pthread_create(&thread_ids[i], NULL, worker_thread, (void*)work_queue) != 0) {
+        thread_data[i].thread_id = i;
+        thread_data[i].work_queue = work_queue;
+        if (pthread_create(&thread_ids[i], NULL, worker_thread, (void*)&thread_data[i]) != 0) {
             printf("Error creating thread %d\n", i);
             exit(EXIT_FAILURE);
         }
