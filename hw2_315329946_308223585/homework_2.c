@@ -249,6 +249,11 @@ int create_counter_files(int num_counters) {
 
             for (int i = 0; i < repeat_count; i++) {
                 repeat_token = strtok(NULL, ";");
+                if (repeat_token == NULL)
+                {
+                    printf("GOTHA\n");
+                    pthread_exit(NULL);
+                }
                 char input[20];
                 strcpy(input, repeat_token); // store the current token before advancing
                 int repeat_command_arg;
