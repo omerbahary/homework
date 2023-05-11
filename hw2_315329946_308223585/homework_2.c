@@ -2,7 +2,9 @@
 
 
 int main(int argc, char* argv[]) {
-    start_time = START_TIME;
+    // Store the start time
+    struct timespec start_time;
+    clock_gettime(CLOCK_MONOTONIC, &start_time);
 
     //Checks if the number of arguments in the Dispatcher is correct
     if (argc != 5) {
@@ -133,12 +135,11 @@ int create_counter_files(int num_counters) {
             pthread_exit(NULL);
         }
         printf("THREAD ID IS %d\n", thread_num);
-        struct timeval current_time;
-        gettimeofday(&current_time, NULL); //Get the current time
-        //calculate the current time
-        long long start_time = (current_time.tv_sec * 1000LL) + (current_time.tv_usec / 1000LL) - (START_TIME.tv_sec * 1000LL) - (START_TIME.tv_usec / 1000LL);
-        log_start_job(thread_num, start_time, job->command);
 
+        struct timespec current_time;
+        clock_gettime(CLOCK_MONOTONIC, &current_time);
+        long long elapsed_time = (current_time.tv_sec - start_time.tv_sec) * 1000LL;
+        log_start_job(thread_num, elapsed_time, job->command);
 
         // split the command string by spaces
         char raw_command[1024];
