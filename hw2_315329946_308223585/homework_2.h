@@ -39,6 +39,15 @@ struct ThreadData {
     struct work_queue* work_queue;
 };
 
+// Structure to hold job statistics
+typedef struct {
+    long long total_running_time;
+    long long sum_of_job_turnaround_time;
+    long long min_job_turnaround_time;
+    long long max_job_turnaround_time;
+    int num_jobs;
+} JobStatistics;
+
 //functions decleration:
 int is_empty(struct work_queue *queue);
 void add_job(struct work_queue *queue, char *command);
@@ -46,10 +55,11 @@ struct job *pop_job(struct work_queue *queue);
 int create_counter_files(int num_counters);
 void* worker_thread(void *arg);
 void create_worker_threads(pthread_t* thread_ids, int num_threads, struct work_queue *work_queue);
-void dispatcher(const char* cmdfile, int num_threads, struct work_queue *work_queue);
+void dispatcher(const char* cmdfile, int num_threads, struct work_queue *work_queue, pthread_t* thread_ids);
 void cleanup(struct work_queue *queue, pthread_t *threads, int num_threads);
 void create_log_file(int thread_num);
 void log_start_job(int thread_num, long long start_time, char* job_line);
 void log_end_job(int thread_num, long long end_time, char* job_line);
 void log_dispatcher(long long time, char* cmd_line);
 void remove_job(struct work_queue *queue);
+void display_statistics(JobStatistics* job_stats);

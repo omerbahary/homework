@@ -1,4 +1,5 @@
 worker increment 5
 worker msleep 10
+dispatcher_wait
 worker msleep 10
-run cmdfile.txt 5 5 1
+run cmdfile.txt 10 10 1

@@ -39,12 +39,14 @@ int main(int argc, char* argv[]) {
     // Create counter files 
     create_counter_files(num_counters);
 
-    dispatcher(cmdfile,num_threads,work_queue); 
-
     // Create an array of pthread_t to hold the thread IDs
     pthread_t thread_ids[num_threads];
+
+    dispatcher(cmdfile,num_threads,work_queue, thread_ids); 
+
     // Create the worker threads
     create_worker_threads(thread_ids, num_threads, work_queue);
+
 
     // Wait for worker threads to finish
     for (int j=0; j<num_threads;j++){
@@ -271,7 +273,7 @@ void create_worker_threads(pthread_t* thread_ids, int num_threads, struct work_q
     }
 }
 //Function to dispatcher 
-void dispatcher(const char* cmdfile, int num_threads, struct work_queue *work_queue) {
+void dispatcher(const char* cmdfile, int num_threads, struct work_queue *work_queue, pthread_t* thread_ids) {
     // Open the log file //
     FILE* log_file = fopen("dispatcher.txt", "w");
     if (log_file == NULL) {
@@ -296,7 +298,18 @@ void dispatcher(const char* cmdfile, int num_threads, struct work_queue *work_qu
         long long cmd_elapsed_time = (cmd_time.tv_sec - start_time.tv_sec) * 1000LL;
         log_dispatcher(cmd_elapsed_time,line);
 
-        // Check if the line is a dispatcher command
+        // Check if the line is a worker command
+
+        if (strncmp(line, "worker ", 7) == 0) {
+        // Parse the job commands and arguments
+        struct job j;
+        // Add the command to the job and add it to work_queue
+            char* worker_cmd = strtok(line, " ");
+            worker_cmd = strtok(NULL, "\n");
+            add_job(work_queue, worker_cmd);
+            // the +6 is to copy without the word worker
+
+        } 
         if (strncmp(line, "dispatcher", 10) == 0) {
             //Every dispatcher line which had been read - write it into the log file.
 
@@ -312,28 +325,23 @@ void dispatcher(const char* cmdfile, int num_threads, struct work_queue *work_qu
             }
             else if (strcmp(cmd, "wait") == 0) {
                 // Wait for all pending background commands to complete
-                // Loop until the work queue is empty
+
                 while (!is_empty(work_queue)) {
+                    pthread_mutex_unlock(&work_queue->mutex);
+
                     // Sleep for a short time to avoid busy waiting
-                    usleep(1000);
+                    //msleep(100);
+
+                    pthread_mutex_lock(&work_queue->mutex);
                 }
+                pthread_mutex_unlock(&work_queue->mutex);
+            
             }
             else {
                 // Unknown dispatcher command
                 printf("Unknown dispatcher command: %s\n", line);
             }
         }
-        // Otherwise, the line is a job for a worker thread
-       else if (strncmp(line, "worker ", 7) == 0) {
-        // Parse the job commands and arguments
-        struct job j;
-        // Add the command to the job and add it to work_queue
-            char* worker_cmd = strtok(line, " ");
-            worker_cmd = strtok(NULL, "\n");
-            add_job(work_queue, worker_cmd);
-            // the +6 is to copy without the word worker
-
-       }
     }
 }
 // Function to free the memory has been used:
