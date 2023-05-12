@@ -136,9 +136,9 @@ int create_counter_files(int num_counters) {
         }
         printf("THREAD ID IS %d\n", thread_num);
 
-        struct timespec current_time;
-        clock_gettime(CLOCK_MONOTONIC, &current_time);
-        long long elapsed_time = (current_time.tv_sec - start_time.tv_sec) * 1000LL;
+        struct timespec job_start_time;
+        clock_gettime(CLOCK_MONOTONIC, &job_start_time);
+        long long elapsed_time = (job_start_time.tv_sec - start_time.tv_sec) * 1000LL;
         log_start_job(thread_num, elapsed_time, job->command);
 
         // split the command string by spaces
@@ -150,7 +150,6 @@ int create_counter_files(int num_counters) {
         char *cmd_arg = strtok(NULL, " ");
         if (cmd == NULL)
         {
-            printf("end of commands\n");
             pthread_exit(NULL);
         }
 
@@ -251,6 +250,12 @@ int create_counter_files(int num_counters) {
                 repeat_token = strtok(NULL, ";");
             }
         }
+        sleep (10);
+        struct timespec job_end_time;
+        clock_gettime(CLOCK_MONOTONIC, &job_end_time);
+        long long end_elapsed_time = (job_end_time.tv_sec - start_time.tv_sec) * 1000LL;
+        log_end_job(thread_num, end_elapsed_time, job->command);
+
     }
 }
 

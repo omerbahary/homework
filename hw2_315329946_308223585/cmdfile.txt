@@ -1,8 +1,5 @@
 worker increment 1
 worker increment 2
-worker increment 3
-worker increment 4
-worker increment 5
-worker increment 6
-worker increment 7
-worker increment 8
+worker msleep 10
+
+run cmdfile.txt 10 10 1
