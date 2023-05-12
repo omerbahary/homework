@@ -201,7 +201,6 @@ int create_counter_files(int num_counters) {
             while (i < repeat_count - 1) {
                 if (repeat_token == NULL)
                 {
-                    printf("GOTHA\n");
                     repeat_token = initial_repeat_token;
                     i++;
                 }
@@ -292,16 +291,15 @@ void dispatcher(const char* cmdfile, int num_threads, struct work_queue *work_qu
         // Remove the newline character from the end of the line
         line[strcspn(line, "\n")] = 0;
 
+        struct timespec cmd_time;
+        clock_gettime(CLOCK_MONOTONIC, &cmd_time);
+        long long cmd_elapsed_time = (cmd_time.tv_sec - start_time.tv_sec) * 1000LL;
+        log_dispatcher(cmd_elapsed_time,line);
+
         // Check if the line is a dispatcher command
         if (strncmp(line, "dispatcher", 10) == 0) {
             //Every dispatcher line which had been read - write it into the log file.
 
-            struct timeval current_time;
-            gettimeofday(&current_time, NULL); //Get the current time
-            //calculate the current time
-            long long elapsed_time = ((current_time.tv_sec - START_TIME.tv_sec) * 1000LL) + ((current_time.tv_usec - START_TIME.tv_usec) / 1000LL);
-    
-            log_dispatcher(elapsed_time,line);
             // Parse the command type and argument
             char cmd[20];
             int arg;

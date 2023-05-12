@@ -1,0 +1,4 @@
+TIME 12762000: read cmd line: worker increment 5
+TIME 12762000: read cmd line: worker msleep 10
+TIME 12762000: read cmd line: worker msleep 10
+TIME 12762000: read cmd line: run cmdfile.txt 5 5 1
