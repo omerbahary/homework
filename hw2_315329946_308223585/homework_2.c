@@ -250,7 +250,6 @@ int create_counter_files(int num_counters) {
                 repeat_token = strtok(NULL, ";");
             }
         }
-        sleep (10);
         struct timespec job_end_time;
         clock_gettime(CLOCK_MONOTONIC, &job_end_time);
         long long end_elapsed_time = (job_end_time.tv_sec - start_time.tv_sec) * 1000LL;
