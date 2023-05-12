@@ -158,7 +158,7 @@ int create_counter_files(int num_counters) {
             // sleep for the specified number of milliseconds
             int msleep_time = atoi(cmd_arg);
             printf("Sleeping\n");
-            usleep(msleep_time * 100000);
+            usleep(msleep_time * 10000);
         }
 
         else if (strcmp(cmd, "increment") == 0) {
