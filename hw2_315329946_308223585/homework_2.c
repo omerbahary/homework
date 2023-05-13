@@ -160,7 +160,7 @@ int create_counter_files(int num_counters) {
             // sleep for the specified number of milliseconds
             int msleep_time = atoi(cmd_arg);
             printf("Sleeping\n");
-            usleep(msleep_time * 10000);
+            usleep(msleep_time * 1000);
         }
 
         else if (strcmp(cmd, "increment") == 0) {
@@ -421,4 +421,19 @@ void remove_job(struct work_queue *queue) {
     queue->head = old_head->next;
     free(old_head);
   }
+}
+
+void display_statistics(JobStatistics* job_stats) {
+    FILE* stats_file = fopen("stats.txt", "w");
+    if (stats_file != NULL) {
+        double average_job_turnaround_time = (double)job_stats->sum_of_job_turnaround_time / job_stats->num_jobs;
+
+        fprintf(stats_file, "totalrunningtime:%lldmilliseconds\n", job_stats->total_running_time);
+        fprintf(stats_file, "sumofjobsturnaroundtime:%lldmilliseconds\n", job_stats->sum_of_job_turnaround_time);
+        fprintf(stats_file, "minjobturnaroundtime:%lldmilliseconds\n", job_stats->min_job_turnaround_time);
+        fprintf(stats_file, "averagejobturnaroundtime:%fmilliseconds\n", average_job_turnaround_time);
+        fprintf(stats_file, "maxjobturnaroundtime:%lldmilliseconds\n", job_stats->max_job_turnaround_time);
+
+        fclose
+    }
 }
