@@ -152,7 +152,6 @@ int create_counter_files(int num_counters) {
         char *cmd_token = strtok(full_command, " ");
         char *cmd = cmd_token;
         char *cmd_arg = strtok(NULL, " ");
-        printf("COMMAND IS %s\n", cmd);
         // check the command type
         if (strcmp(cmd, "msleep") == 0) {
             // sleep for the specified number of milliseconds
@@ -208,9 +207,6 @@ int create_counter_files(int num_counters) {
                 strcpy(input, repeat_token); // store the current token before advancing
                 int repeat_command_arg;
                 sscanf(input, "%s %d", current_token, &repeat_command_arg);
-
-                //printf("repeat command is %s\n", current_token);
-               // printf("repeat command argument is %d\n", repeat_command_arg);
 
                 if (repeat_token != NULL) {
                     // execute the repeated command
@@ -371,7 +367,6 @@ void dispatcher(const char* cmdfile, int num_threads, struct work_queue *work_qu
                 // Wait for all pending background commands to complete
                 pthread_mutex_lock(&work_queue->mutex);
                 disp_wait_counter = work_queue->curr_num_jobs;
-                printf("disp_wait_counter is %d\n", disp_wait_counter);
                 pthread_mutex_unlock(&work_queue->mutex);
 
                 while (disp_wait_counter > 0) {
