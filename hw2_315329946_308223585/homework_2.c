@@ -2,9 +2,6 @@
 
 
 int main(int argc, char* argv[]) {
-    // Store the start time
-    struct timespec start_time;
-    clock_gettime(CLOCK_MONOTONIC, &start_time);
 
     //Checks if the number of arguments in the Dispatcher is correct
     if (argc != 5) {
@@ -32,14 +29,17 @@ int main(int argc, char* argv[]) {
         #undef LOG_ENABLED
         #define LOG_ENABLED 1
     }
-    struct work_queue* work_queue = malloc(sizeof(struct work_queue));
-    struct ThreadData* thread_data = malloc(num_threads * sizeof(struct ThreadData));
 
     // Create counter files 
     create_counter_files(num_counters);
 
     // Create an array of pthread_t to hold the thread IDs
     pthread_t thread_ids[num_threads];
+    struct work_queue* work_queue = malloc(sizeof(struct work_queue));
+    struct ThreadData* thread_data = malloc(num_threads * sizeof(struct ThreadData));
+
+    // Store the start time
+    work_queue->hw2_start_time = clock();
 
     dispatcher(cmdfile,num_threads,work_queue, thread_ids, thread_data);
     return 0;
@@ -105,6 +105,7 @@ int create_counter_files(int num_counters) {
     struct ThreadData* data = (struct ThreadData*)arg;
     struct work_queue* work_queue = data->work_queue;
     int thread_num = data->thread_id;
+    clock_t start;
 
     while (1) {
         struct job *job = NULL;
@@ -130,7 +131,7 @@ int create_counter_files(int num_counters) {
         }
 
         work_queue->curr_num_jobs++;
-
+        start = work_queue->hw2_start_time;
         pthread_mutex_unlock(&work_queue->mutex);
 
         if (job == NULL){
@@ -138,9 +139,10 @@ int create_counter_files(int num_counters) {
             pthread_exit(NULL);
         }
 
-        struct timespec job_start_time;
-        clock_gettime(CLOCK_MONOTONIC, &job_start_time);
-        long long elapsed_time = (job_start_time.tv_sec - start_time.tv_sec) * 1000LL;
+        clock_t start_t;
+        start_t = clock();
+        double elapsed_time = (double)(start_t - start) / CLOCKS_PER_SEC;
+        elapsed_time *= 100000;
         log_start_job(thread_num, elapsed_time, job->command);
 
         // split the command string by spaces
@@ -150,6 +152,7 @@ int create_counter_files(int num_counters) {
         char *cmd_token = strtok(full_command, " ");
         char *cmd = cmd_token;
         char *cmd_arg = strtok(NULL, " ");
+        printf("COMMAND IS %s\n", cmd);
         // check the command type
         if (strcmp(cmd, "msleep") == 0) {
             // sleep for the specified number of milliseconds
@@ -215,7 +218,7 @@ int create_counter_files(int num_counters) {
                         // increment the counter in the counter file
                         char filename[MAX_COUNTER_NAME_LENGTH];
                         sprintf(filename, "count%02d.txt", repeat_command_arg);
-
+                        printf("Incrementing\n");
                         int counter_value;
                         FILE *counter_file = fopen(filename, "r+");
                         fscanf(counter_file, "%d", &counter_value);
@@ -237,6 +240,7 @@ int create_counter_files(int num_counters) {
                         fclose(counter_file);
                     } else if (strstr(current_token, "msleep") != NULL) {
                         // sleep for the specified number of milliseconds
+                        printf("Sleeping\n");
                         usleep(repeat_command_arg * 1000);
                     } else {
                         fprintf(stderr, "Invalid command: %s\n", current_token);
@@ -246,23 +250,14 @@ int create_counter_files(int num_counters) {
                 repeat_token = strtok(NULL, ";");
             }
         }
-        struct timespec job_end_time;
-        clock_gettime(CLOCK_MONOTONIC, &job_end_time);
-        long long end_elapsed_time = (job_end_time.tv_sec - start_time.tv_sec) * 1000LL;
+        clock_t end_t;
+        end_t = clock();
+        double end_elapsed_time = (double)(end_t - start) / CLOCKS_PER_SEC;
+        end_elapsed_time*=100000;
         log_end_job(thread_num, end_elapsed_time, job->command);
 
         pthread_mutex_lock(&work_queue->mutex);
         work_queue->curr_num_jobs--;
-        printf("Curr num jobs: %d\n", work_queue->curr_num_jobs);
-
-        pthread_mutex_lock(&data->disp_wait_mutex);
-        if (work_queue->curr_num_jobs == 0 && work_queue->signaled == 0)
-        {
-            work_queue->signaled = 1;
-            printf("SIGNALING TO FINISH\n");
-            pthread_cond_signal(&data->disp_wait_cond);
-        }
-        pthread_mutex_unlock(&data->disp_wait_mutex);
         pthread_mutex_unlock(&work_queue->mutex);
 
     }
@@ -288,6 +283,7 @@ void dispatcher(const char* cmdfile, int num_threads, struct work_queue *work_qu
     // Create the worker threads
     work_queue->curr_num_jobs = 0;
     int disp_wait_counter;
+    clock_t start = work_queue->hw2_start_time;
 
     create_worker_threads(thread_ids, num_threads, work_queue, thread_data);
 
@@ -310,9 +306,10 @@ void dispatcher(const char* cmdfile, int num_threads, struct work_queue *work_qu
         // Remove the newline character from the end of the line
         line[strcspn(line, "\n")] = 0;
 
-        struct timespec cmd_time;
-        clock_gettime(CLOCK_MONOTONIC, &cmd_time);
-        long long cmd_elapsed_time = (cmd_time.tv_sec - start_time.tv_sec) * 1000LL;
+        clock_t cmd_t;
+        cmd_t = clock();
+        double cmd_elapsed_time = (double)(cmd_t - start) / CLOCKS_PER_SEC;
+        cmd_elapsed_time*=100000;
         log_dispatcher(cmd_elapsed_time,line);
 
         // Check if the line is a worker command
@@ -348,10 +345,8 @@ void dispatcher(const char* cmdfile, int num_threads, struct work_queue *work_qu
                 pthread_mutex_unlock(&work_queue->mutex);
 
                 while (disp_wait_counter > 0) {
-                    printf("DISPATCHER IS WAITING for queue to empty\n");
                     pthread_mutex_lock(&work_queue->mutex);
                     disp_wait_counter = work_queue->curr_num_jobs;
-                    printf("disp_wait_counter is %d\n", disp_wait_counter);
                     pthread_mutex_unlock(&work_queue->mutex);
                 }
             }
@@ -405,7 +400,7 @@ void create_log_file(int thread_num) {
     fclose(log_file);
 }
 
-void log_start_job(int thread_num, long long start_time, char* job_line) {
+void log_start_job(int thread_num, double start_time, char* job_line) {
     if (!LOG_ENABLED) {
         return;
     }
@@ -417,11 +412,11 @@ void log_start_job(int thread_num, long long start_time, char* job_line) {
         perror("Failed to open log file");
         exit(1);
     }
-    fprintf(log_file, "TIME %lld: START job %s\n", start_time, job_line);
+    fprintf(log_file, "TIME %f: START job %s\n", start_time, job_line);
     fclose(log_file);
 }
 
-void log_end_job(int thread_num, long long end_time, char* job_line) {
+void log_end_job(int thread_num, double end_time, char* job_line) {
     if (!LOG_ENABLED) {
         return;
     }
@@ -433,11 +428,11 @@ void log_end_job(int thread_num, long long end_time, char* job_line) {
         perror("Failed to open log file");
         exit(1);
     }
-    fprintf(log_file, "TIME %lld: END job %s\n", end_time, job_line);
+    fprintf(log_file, "TIME %f: END job %s\n", end_time, job_line);
     fclose(log_file);
 }
 
-void log_dispatcher(long long time, char* cmd_line) {
+void log_dispatcher(double time, char* cmd_line) {
     if (!LOG_ENABLED) {
         return;
     }
@@ -447,7 +442,7 @@ void log_dispatcher(long long time, char* cmd_line) {
         perror("Failed to open log file");
         exit(1);
     }
-    fprintf(log_file, "TIME %lld: read cmd line: %s\n", time, cmd_line);
+    fprintf(log_file, "TIME %f: read cmd line: %s\n", time, cmd_line);
     fclose(log_file);
 }
 void remove_job(struct work_queue *queue) {
