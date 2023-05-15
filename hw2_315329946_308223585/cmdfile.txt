@@ -1,5 +1,12 @@
-worker increment 1
-worker increment 2
+worker msleep 1000
+worker increment 3
+worker msleep 1000
+dispatcher_wait
+worker msleep 1000
+worker increment 3
+worker msleep 1000
+worker increment 3
+worker msleep 1000
 worker increment 3
 
-run cmdfile.txt 5 10 1
+run cmdfile.txt 12 12 1

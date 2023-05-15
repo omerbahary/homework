@@ -1,5 +1,12 @@
-TIME 1883000: read cmd line: worker increment 1
-TIME 1883000: read cmd line: worker increment 2
-TIME 1883000: read cmd line: worker increment 3
-TIME 1883000: read cmd line: 
-TIME 1883000: read cmd line: run cmdfile.txt 5 10 1
+TIME 5053000: read cmd line: worker msleep 1000
+TIME 5053000: read cmd line: worker increment 3
+TIME 5053000: read cmd line: worker msleep 1000
+TIME 5053000: read cmd line: dispatcher_wait
+TIME 5054000: read cmd line: worker msleep 1000
+TIME 5054000: read cmd line: worker increment 3
+TIME 5054000: read cmd line: worker msleep 1000
+TIME 5054000: read cmd line: worker increment 3
+TIME 5054000: read cmd line: worker msleep 1000
+TIME 5054000: read cmd line: worker increment 3
+TIME 5054000: read cmd line: 
+TIME 5054000: read cmd line: run cmdfile.txt 12 12 1

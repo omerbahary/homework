@@ -33,12 +33,16 @@ struct work_queue {
     pthread_mutex_t mutex;
     pthread_cond_t cond_q_empty;
     int no_more_jobs;
+    int curr_num_jobs;
+    int signaled;
 };
 
 // Structure to hold thread ID and work queue pointer
 struct ThreadData {
     int thread_id;
     struct work_queue* work_queue;
+    pthread_mutex_t disp_wait_mutex;
+    pthread_cond_t disp_wait_cond;
 };
 
 // Structure to hold job statistics
@@ -56,8 +60,8 @@ void add_job(struct work_queue *queue, char *command);
 struct job *pop_job(struct work_queue *queue);
 int create_counter_files(int num_counters);
 void* worker_thread(void *arg);
-void create_worker_threads(pthread_t* thread_ids, int num_threads, struct work_queue *work_queue);
-void dispatcher(const char* cmdfile, int num_threads, struct work_queue *work_queue, pthread_t* thread_ids);
+void create_worker_threads(pthread_t* thread_ids, int num_threads, struct work_queue *work_queue, struct ThreadData *thread_data);
+void dispatcher(const char* cmdfile, int num_threads, struct work_queue *work_queue, pthread_t* thread_ids, struct ThreadData *thread_data);
 void cleanup(struct work_queue *queue, pthread_t *threads, int num_threads);
 void create_log_file(int thread_num);
 void log_start_job(int thread_num, long long start_time, char* job_line);

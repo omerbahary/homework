@@ -33,6 +33,7 @@ int main(int argc, char* argv[]) {
         #define LOG_ENABLED 1
     }
     struct work_queue* work_queue = malloc(sizeof(struct work_queue));
+    struct ThreadData* thread_data = malloc(num_threads * sizeof(struct ThreadData));
 
     // Create counter files 
     create_counter_files(num_counters);
@@ -40,8 +41,7 @@ int main(int argc, char* argv[]) {
     // Create an array of pthread_t to hold the thread IDs
     pthread_t thread_ids[num_threads];
 
-    dispatcher(cmdfile,num_threads,work_queue, thread_ids);
-
+    dispatcher(cmdfile,num_threads,work_queue, thread_ids, thread_data);
     return 0;
 }
 
@@ -51,7 +51,6 @@ int is_empty(struct work_queue *queue) {
 }
 
 void add_job(struct work_queue *queue, char *command) {
-  printf("JOBS ADDD");
   // Create a new job.
   struct job *job = malloc(sizeof(struct job));
   strncpy(job->command, command, 1023);
@@ -82,9 +81,6 @@ struct job *pop_job(struct work_queue *queue) {
 
   // Set the head of the queue to the next job.
   queue->head = job->next;
-
-  // Free the memory used by the job.
-  free(job);
 
   // Return the job.
   return job;
@@ -132,6 +128,8 @@ int create_counter_files(int num_counters) {
                 work_queue->tail = NULL;
             }
         }
+
+        work_queue->curr_num_jobs++;
 
         pthread_mutex_unlock(&work_queue->mutex);
 
@@ -253,14 +251,29 @@ int create_counter_files(int num_counters) {
         long long end_elapsed_time = (job_end_time.tv_sec - start_time.tv_sec) * 1000LL;
         log_end_job(thread_num, end_elapsed_time, job->command);
 
+        pthread_mutex_lock(&work_queue->mutex);
+        work_queue->curr_num_jobs--;
+        printf("Curr num jobs: %d\n", work_queue->curr_num_jobs);
+
+        pthread_mutex_lock(&data->disp_wait_mutex);
+        if (work_queue->curr_num_jobs == 0 && work_queue->signaled == 0)
+        {
+            work_queue->signaled = 1;
+            printf("SIGNALING TO FINISH\n");
+            pthread_cond_signal(&data->disp_wait_cond);
+        }
+        pthread_mutex_unlock(&data->disp_wait_mutex);
+        pthread_mutex_unlock(&work_queue->mutex);
+
     }
 }
 
 // Function to create worker threads
-void create_worker_threads(pthread_t* thread_ids, int num_threads, struct work_queue *work_queue) {
-    struct ThreadData thread_data[num_threads];
+void create_worker_threads(pthread_t* thread_ids, int num_threads, struct work_queue *work_queue, struct ThreadData *thread_data) {
     for (int i = 0; i < num_threads; i++) {
         create_log_file(i);
+        work_queue->head = NULL;
+        work_queue->tail = NULL;
         thread_data[i].thread_id = i;
         thread_data[i].work_queue = work_queue;
         if (pthread_create(&thread_ids[i], NULL, worker_thread, (void*)&thread_data[i]) != 0) {
@@ -270,14 +283,13 @@ void create_worker_threads(pthread_t* thread_ids, int num_threads, struct work_q
     }
 }
 //Function to dispatcher 
-void dispatcher(const char* cmdfile, int num_threads, struct work_queue *work_queue, pthread_t* thread_ids) {
-
-    work_queue->head = NULL;
-    work_queue->tail = NULL;
+void dispatcher(const char* cmdfile, int num_threads, struct work_queue *work_queue, pthread_t* thread_ids, struct ThreadData *thread_data) {
 
     // Create the worker threads
-    create_worker_threads(thread_ids, num_threads, work_queue);
-    printf("CREATED");
+    work_queue->curr_num_jobs = 0;
+    int disp_wait_counter;
+
+    create_worker_threads(thread_ids, num_threads, work_queue, thread_data);
 
     // Open the log file //
     FILE* log_file = fopen("dispatcher.txt", "w");
@@ -330,13 +342,18 @@ void dispatcher(const char* cmdfile, int num_threads, struct work_queue *work_qu
             }
             else if (strcmp(cmd, "wait") == 0) {
                 // Wait for all pending background commands to complete
-
                 pthread_mutex_lock(&work_queue->mutex);
-
-                if (!is_empty(work_queue)) {
-                }
+                disp_wait_counter = work_queue->curr_num_jobs;
+                printf("disp_wait_counter is %d\n", disp_wait_counter);
                 pthread_mutex_unlock(&work_queue->mutex);
-            
+
+                while (disp_wait_counter > 0) {
+                    printf("DISPATCHER IS WAITING for queue to empty\n");
+                    pthread_mutex_lock(&work_queue->mutex);
+                    disp_wait_counter = work_queue->curr_num_jobs;
+                    printf("disp_wait_counter is %d\n", disp_wait_counter);
+                    pthread_mutex_unlock(&work_queue->mutex);
+                }
             }
             else {
                 // Unknown dispatcher command
@@ -344,12 +361,16 @@ void dispatcher(const char* cmdfile, int num_threads, struct work_queue *work_qu
             }
         }
     }
-    printf("EEEEEEEEEEEEOOOOOOOOOOOFFFFFFFFFFF\n");
     cleanup(work_queue, thread_ids, num_threads);
 }
 void cleanup(struct work_queue *queue, pthread_t *threads, int num_threads) {
     // Set the "no_more_jobs" flag to indicate that there are no more jobs.
     pthread_mutex_lock(&queue->mutex);
+    while (!is_empty(queue)) {
+    printf("Emtying queue\n");
+        struct job *job = pop_job(queue);
+        free(job);
+    }
     queue->no_more_jobs = 1;
     pthread_mutex_unlock(&queue->mutex);
 
