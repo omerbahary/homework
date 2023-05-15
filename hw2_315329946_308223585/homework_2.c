@@ -458,11 +458,11 @@ void display_statistics(JobStatistics* job_stats) {
     if (stats_file != NULL) {
         double average_job_turnaround_time = (double)job_stats->sum_of_job_turnaround_time / job_stats->num_jobs;
 
-        fprintf(stats_file, "totalrunningtime:%lldmilliseconds\n", job_stats->total_running_time);
-        fprintf(stats_file, "sumofjobsturnaroundtime:%lldmilliseconds\n", job_stats->sum_of_job_turnaround_time);
-        fprintf(stats_file, "minjobturnaroundtime:%lldmilliseconds\n", job_stats->min_job_turnaround_time);
-        fprintf(stats_file, "averagejobturnaroundtime:%fmilliseconds\n", average_job_turnaround_time);
-        fprintf(stats_file, "maxjobturnaroundtime:%lldmilliseconds\n", job_stats->max_job_turnaround_time);
+        fprintf(stats_file, "total running time: %f milliseconds\n", job_stats->total_running_time);
+        fprintf(stats_file, "sum of jobs turnaround time: %lf milliseconds\n", job_stats->sum_of_job_turnaround_time);
+        fprintf(stats_file, "min job turnaround time: %f milliseconds\n", job_stats->min_job_turnaround_time);
+        fprintf(stats_file, "average job turnaround time: %f milliseconds\n", average_job_turnaround_time);
+        fprintf(stats_file, "max job turnaround time: %f milliseconds\n", job_stats->max_job_turnaround_time);
 
         fclose(stats_file);
     }
