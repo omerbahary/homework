@@ -31,6 +31,8 @@ struct work_queue {
     struct job *head;
     struct job *tail;
     pthread_mutex_t mutex;
+    pthread_cond_t cond_q_empty;
+    int no_more_jobs;
 };
 
 // Structure to hold thread ID and work queue pointer
