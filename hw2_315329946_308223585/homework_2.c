@@ -33,8 +33,6 @@ int main(int argc, char* argv[]) {
         #define LOG_ENABLED 1
     }
     struct work_queue* work_queue = malloc(sizeof(struct work_queue));
-    work_queue->head = NULL;
-    work_queue->tail = NULL;
 
     // Create counter files 
     create_counter_files(num_counters);
@@ -43,10 +41,6 @@ int main(int argc, char* argv[]) {
     pthread_t thread_ids[num_threads];
 
     dispatcher(cmdfile,num_threads,work_queue, thread_ids);
-
-    // Free resources
-    cleanup(work_queue, thread_ids, num_threads);
-
 
     return 0;
 }
@@ -115,7 +109,6 @@ int create_counter_files(int num_counters) {
     struct ThreadData* data = (struct ThreadData*)arg;
     struct work_queue* work_queue = data->work_queue;
     int thread_num = data->thread_id;
-    int exit_lag = 0;
 
     while (1) {
         struct job *job = NULL;
@@ -279,6 +272,9 @@ void create_worker_threads(pthread_t* thread_ids, int num_threads, struct work_q
 //Function to dispatcher 
 void dispatcher(const char* cmdfile, int num_threads, struct work_queue *work_queue, pthread_t* thread_ids) {
 
+    work_queue->head = NULL;
+    work_queue->tail = NULL;
+
     // Create the worker threads
     create_worker_threads(thread_ids, num_threads, work_queue);
     printf("CREATED");
@@ -358,7 +354,9 @@ void cleanup(struct work_queue *queue, pthread_t *threads, int num_threads) {
     pthread_mutex_unlock(&queue->mutex);
 
     // Signal all worker threads to wake up and exit.
+    pthread_mutex_lock(&queue->mutex);
     pthread_cond_broadcast(&queue->cond_q_empty);
+    pthread_mutex_unlock(&queue->mutex);
 
     // Wait for worker threads to finish.
     for (int j = 0; j < num_threads; j++) {
