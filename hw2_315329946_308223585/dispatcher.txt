@@ -1,7 +1,7 @@
-TIME 233.500000: read cmd line: worker msleep 1000
-TIME 257.300000: read cmd line: worker msleep 100
-TIME 300.800000: read cmd line: worker msleep 100
-TIME 345.000000: read cmd line: worker msleep 100
-TIME 381.900000: read cmd line: worker repeat 5; increment 5; msleep 1
-TIME 403.800000: read cmd line: 
-TIME 442.900000: read cmd line: run cmdfile.txt 6 6 1
+TIME 216.300000: read cmd line: worker msleep 1000
+TIME 232.300000: read cmd line: worker msleep 100
+TIME 265.900000: read cmd line: worker msleep 100
+TIME 301.200000: read cmd line: worker msleep 100
+TIME 330.400000: read cmd line: worker repeat 5; increment 5; msleep 1
+TIME 358.700000: read cmd line: 
+TIME 456.300000: read cmd line: run cmdfile.txt 6 6 1

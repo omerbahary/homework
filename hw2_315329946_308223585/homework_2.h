@@ -59,7 +59,7 @@ struct job *pop_job(struct work_queue *queue);
 int create_counter_files(int num_counters);
 void* worker_thread(void *arg);
 void create_worker_threads(pthread_t* thread_ids, int num_threads, struct work_queue *work_queue, struct ThreadData *thread_data);
-void dispatcher(const char* cmdfile, int num_threads, struct work_queue *work_queue, pthread_t* thread_ids, struct ThreadData *thread_data, struct JobStatistics *stats);
+void dispatcher(const char* cmdfile, int num_threads, struct work_queue *work_queue, pthread_t* thread_ids, struct ThreadData *thread_data);
 void cleanup(struct work_queue *queue, pthread_t *threads, int num_threads);
 void create_log_file(int thread_num);
 void log_start_job(int thread_num, double start_time, char* job_line);

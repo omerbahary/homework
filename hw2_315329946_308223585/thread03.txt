@@ -1,2 +1,2 @@
-TIME 384.400000: START job msleep 100
-TIME 780.100000: END job msleep
+TIME 333.500000: START job msleep 100
+TIME 602.600000: END job msleep
