@@ -1,0 +1,15 @@
+worker msleep 10
+worker msleep 10
+worker msleep 10
+worker increment 5
+worker increment 6
+dispatcher_msleep 100
+worker repeat 5; increment 5; msleep 1
+worker msleep 100
+worker msleep 100
+worker increment 6
+worker msleep 500
+dispatcher_wait
+dispatcher_msleep 100
+worker increment 1
+worker increment 2
