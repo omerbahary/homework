@@ -260,6 +260,25 @@ int create_counter_files(int num_counters) {
         work_queue->curr_num_jobs--;
         pthread_mutex_unlock(&work_queue->mutex);
 
+        double turnaround_time = (double)(end_t - start_t) / CLOCKS_PER_SEC;
+        turnaround_time*=100000;
+
+        pthread_mutex_lock(&data->stats.stats_mutex);
+        data->stats.sum_of_job_turnaround_time += turnaround_time;
+
+        if (turnaround_time < data->stats.min_job_turnaround_time)
+        {
+            data->stats.min_job_turnaround_time = turnaround_time;
+        }
+
+        if (turnaround_time > data->stats.max_job_turnaround_time)
+        {
+            data->stats.max_job_turnaround_time = turnaround_time;
+        }
+
+
+        pthread_mutex_unlock(&data->stats.stats_mutex);
+
     }
 }
 
@@ -285,6 +304,13 @@ void dispatcher(const char* cmdfile, int num_threads, struct work_queue *work_qu
     int disp_wait_counter;
     clock_t start = work_queue->hw2_start_time;
 
+    pthread_mutex_lock(&thread_data->stats.stats_mutex);
+    thread_data->stats.total_running_time = 0;
+    thread_data->stats.max_job_turnaround_time = 0;
+    thread_data->stats.min_job_turnaround_time = 999999;
+    thread_data->stats.sum_of_job_turnaround_time = 0;
+    pthread_mutex_unlock(&thread_data->stats.stats_mutex);
+
     create_worker_threads(thread_ids, num_threads, work_queue, thread_data);
 
     // Open the log file //
@@ -306,6 +332,11 @@ void dispatcher(const char* cmdfile, int num_threads, struct work_queue *work_qu
         // Remove the newline character from the end of the line
         line[strcspn(line, "\n")] = 0;
 
+        pthread_mutex_lock(&thread_data->stats.stats_mutex);
+        thread_data->stats.num_jobs++;
+        pthread_mutex_unlock(&thread_data->stats.stats_mutex);
+
+
         clock_t cmd_t;
         cmd_t = clock();
         double cmd_elapsed_time = (double)(cmd_t - start) / CLOCKS_PER_SEC;
@@ -316,7 +347,6 @@ void dispatcher(const char* cmdfile, int num_threads, struct work_queue *work_qu
 
         if (strncmp(line, "worker ", 7) == 0) {
         // Parse the job commands and arguments
-        struct job j;
         // Add the command to the job and add it to work_queue
             char* worker_cmd = strtok(line, " ");
             worker_cmd = strtok(NULL, "\n");
@@ -357,6 +387,17 @@ void dispatcher(const char* cmdfile, int num_threads, struct work_queue *work_qu
         }
     }
     cleanup(work_queue, thread_ids, num_threads);
+
+    clock_t end_t;
+    end_t = clock();
+    double end_elapsed_t = (double)(end_t - start) / CLOCKS_PER_SEC;
+    end_elapsed_t*=100000;
+
+    pthread_mutex_lock(&thread_data->stats.stats_mutex);
+    thread_data->stats.total_running_time = end_elapsed_t;
+    pthread_mutex_unlock(&thread_data->stats.stats_mutex);
+
+    display_statistics(thread_data->stats);
 }
 void cleanup(struct work_queue *queue, pthread_t *threads, int num_threads) {
     // Set the "no_more_jobs" flag to indicate that there are no more jobs.
@@ -453,16 +494,16 @@ void remove_job(struct work_queue *queue) {
   }
 }
 
-void display_statistics(JobStatistics* job_stats) {
+void display_statistics(struct JobStatistics job_stats) {
     FILE* stats_file = fopen("stats.txt", "w");
     if (stats_file != NULL) {
-        double average_job_turnaround_time = (double)job_stats->sum_of_job_turnaround_time / job_stats->num_jobs;
+        double average_job_turnaround_time = (double)job_stats.sum_of_job_turnaround_time / job_stats.num_jobs;
 
-        fprintf(stats_file, "total running time: %f milliseconds\n", job_stats->total_running_time);
-        fprintf(stats_file, "sum of jobs turnaround time: %lf milliseconds\n", job_stats->sum_of_job_turnaround_time);
-        fprintf(stats_file, "min job turnaround time: %f milliseconds\n", job_stats->min_job_turnaround_time);
+        fprintf(stats_file, "total running time: %f milliseconds\n", job_stats.total_running_time);
+        fprintf(stats_file, "sum of jobs turnaround time: %lf milliseconds\n", job_stats.sum_of_job_turnaround_time);
+        fprintf(stats_file, "min job turnaround time: %f milliseconds\n", job_stats.min_job_turnaround_time);
         fprintf(stats_file, "average job turnaround time: %f milliseconds\n", average_job_turnaround_time);
-        fprintf(stats_file, "max job turnaround time: %f milliseconds\n", job_stats->max_job_turnaround_time);
+        fprintf(stats_file, "max job turnaround time: %f milliseconds\n", job_stats.max_job_turnaround_time);
 
         fclose(stats_file);
     }

@@ -3,5 +3,3 @@ worker msleep 100
 worker msleep 100
 worker msleep 100
 worker repeat 5; increment 5; msleep 1
-
-run cmdfile.txt 6 6 1

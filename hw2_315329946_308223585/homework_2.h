@@ -37,20 +37,23 @@ struct work_queue {
     clock_t hw2_start_time;
 };
 
-// Structure to hold thread ID and work queue pointer
-struct ThreadData {
-    int thread_id;
-    struct work_queue* work_queue;
-};
-
 // Structure to hold job statistics
-typedef struct {
+struct JobStatistics{
     double total_running_time;
     double sum_of_job_turnaround_time;
     double min_job_turnaround_time;
     double max_job_turnaround_time;
     int num_jobs;
-} JobStatistics;
+    pthread_mutex_t stats_mutex;
+
+};
+// Structure to hold thread ID and work queue pointer
+struct ThreadData {
+    int thread_id;
+    struct work_queue* work_queue;
+    struct JobStatistics stats;
+};
+
 
 //functions decleration:
 int is_empty(struct work_queue *queue);
@@ -66,4 +69,4 @@ void log_start_job(int thread_num, double start_time, char* job_line);
 void log_end_job(int thread_num, double end_time, char* job_line);
 void log_dispatcher(double time, char* cmd_line);
 void remove_job(struct work_queue *queue);
-void display_statistics(JobStatistics* job_stats);
+void display_statistics(struct JobStatistics job_stats);
